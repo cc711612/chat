@@ -1,0 +1,102 @@
+.App {
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  height: 85vh;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.message {
+  margin-bottom: 15px;
+}
+
+.message-content {
+  padding: 10px 15px;
+  border-radius: 18px;
+  display: inline-block;
+  max-width: 80%;
+  word-break: break-word;
+}
+
+.typing-indicator {
+  font-style: italic;
+  color: #6c757d;
+  padding: 5px 0;
+}
+
+/* 自己发送的消息样式 */
+.text-end .message-content {
+  background-color: #007bff;
+  color: white;
+  border-bottom-right-radius: 5px;
+}
+
+/* 他人发送的消息样式 */
+.message:not(.text-end) {
+  background-color: #f8f9fa;
+  color: #212529;
+  border-bottom-left-radius: 5px;
+  text-align: left; /* 置左對齊 */
+}
+
+/* RWD 支援：小螢幕置中對齊 */
+@media (max-width: 768px) {
+  .message:not(.text-end) {
+    text-align: center;
+  }
+}
+
+.message-time {
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.message-sender {
+  margin-bottom: 2px;
+}
