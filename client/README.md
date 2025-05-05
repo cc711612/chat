@@ -1,70 +1,101 @@
-# Getting Started with Create React App
+# 聊天應用 - 前端
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+這是一個基於 React 開發的實時聊天應用程式前端。此前端應用為使用者提供直觀的界面，用於註冊、登入、加入聊天室以及傳送和接收即時訊息。
 
-## Available Scripts
+## 功能特色
 
-In the project directory, you can run:
+- 使用者註冊與登入系統
+- 聊天室列表與管理
+- 即時訊息交流
+- 響應式設計，適合桌面和移動裝置使用
 
-### `npm start`
+## 技術棧
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React.js
+- Socket.io-client (用於實時通訊)
+- CSS (樣式設計)
+- RESTful API 整合
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 開始使用
 
-### `npm test`
+### 必要條件
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js 16.x 或更高版本
+- npm 7.x 或更高版本
 
-### `npm run build`
+### 安裝步驟
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. 複製專案後，進入 client 目錄
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+cd client
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. 安裝相依套件
 
-### `npm run eject`
+```bash
+npm install
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+3. 創建環境變數檔案
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+在 client 目錄下創建 `.env` 檔案，並添加以下內容：
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+REACT_APP_API_URL=http://localhost:3001
+REACT_APP_SOCKET_URL=http://localhost:3001
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+請根據您的後端服務配置調整 URL。
 
-## Learn More
+4. 啟動開發伺服器
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm start
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+應用將在 [http://localhost:3000](http://localhost:3000) 運行。
 
-### Code Splitting
+## 構建生產版本
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+要構建用於生產環境的優化版本，請運行：
 
-### Analyzing the Bundle Size
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+構建後的檔案將輸出到 `build` 目錄中。
 
-### Making a Progressive Web App
+## 專案結構
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```
+src/
+├── components/       # React 元件
+│   ├── ChatPage.js   # 聊天室頁面
+│   ├── LoginPage.js  # 登入頁面
+│   ├── RegisterPage.js # 註冊頁面
+│   └── RoomsPage.js  # 聊天室列表頁面
+├── services/         # API 和服務
+│   ├── api.js        # REST API 請求函數
+│   └── socket.js     # Socket.io 連接管理
+├── App.js            # 主應用元件
+└── index.js          # 應用入口點
+```
 
-### Advanced Configuration
+## 與後端連接
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+此前端應用需要與對應的後端服務一起運行。請確保按照後端 README 指示啟動後端服務器。
 
-### Deployment
+## 故障排除
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+如果您遇到連接問題：
 
-### `npm run build` fails to minify
+1. 確認後端服務是否正在運行
+2. 檢查 `.env` 檔案中的 URL 配置是否正確
+3. 確認瀏覽器 console 中沒有 CORS 相關錯誤
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 開發指南
+
+- API 請求應添加到 `services/api.js`
+- Socket.io 事件處理應添加到 `services/socket.js`
+- 新頁面或元件應添加到 `components` 目錄
