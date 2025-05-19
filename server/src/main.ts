@@ -1,3 +1,4 @@
+global.crypto = require('crypto');
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +10,7 @@ async function bootstrap() {
   
   // 從環境配置中獲取 CORS 設定
   const corsEnabled = configService.get('cors.enabled');
+  console.log('CORS_ENABLED value from configService:', corsEnabled);
   if (corsEnabled) {
     app.enableCors({
       origin: configService.get('cors.origin'),
