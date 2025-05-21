@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
 import { api } from '../services/api';
 import { socketService } from '../services/socket';
@@ -16,13 +16,23 @@ const LoginPage = ({ setCurrentUser }) => {
   const location = useLocation();
 
   useEffect(() => {
+    // 已登入自動導向 /rooms
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      try {
+        const user = JSON.parse(userString);
+        if (user && typeof user === 'object' && (typeof user.id === 'number' ? !isNaN(user.id) : !!user.id)) {
+          history.replace('/rooms');
+        }
+      } catch (e) {}
+    }
     // 處理從其他頁面傳入的消息
     if (location.state?.message) {
       setNotification(location.state.message);
       // 清除 location state 以避免重新載入頁面時再次顯示消息
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, history]);
 
   const handleChange = (e) => {
     setFormData({

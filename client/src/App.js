@@ -19,7 +19,7 @@ function App() {
       if (userString) {
         const user = JSON.parse(userString);
         // 檢查 user 是否為物件且有 id
-        if (user && typeof user === 'object' && user.id) {
+        if (user && typeof user === 'object' && (typeof user.id === 'number' ? !isNaN(user.id) : !!user.id)) {
           setCurrentUser(user);
         } else {
           // 若 user 無效則清除 localStorage
@@ -39,6 +39,7 @@ function App() {
   const handleLogout = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
+      console.log('logout user:', user);
       
       if (user) {
         // 通知 WebSocket 伺服器用戶登出

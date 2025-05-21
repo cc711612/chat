@@ -80,10 +80,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('logout')
   async handleUserLogout(
-    userId: number,
+    @MessageBody() data: { userId: number },
     @ConnectedSocket() client: Socket
   ) {
     try {
+      const userId = data.userId;
       // 更新用戶的在線狀態
       await this.usersService.updateOnlineStatus(userId, false);
       
