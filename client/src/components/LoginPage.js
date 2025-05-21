@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { socketService } from '../services/socket';
 import { useHistory, useLocation } from 'react-router-dom';
 
-const LoginPage = () => {
+const LoginPage = ({ setCurrentUser }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -48,6 +48,8 @@ const LoginPage = () => {
       socketService.connect();
       await socketService.login(user.id);
       
+      // 即時更新 App 狀態
+      setCurrentUser(user);
       // 導航到聊天室列表頁面
       history.push('/rooms');
     } catch (err) {

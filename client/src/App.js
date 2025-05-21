@@ -94,7 +94,9 @@ function App() {
         </Navbar>
 
         <Switch>
-          <Route path="/login" component={LoginPage} />
+          <Route path="/login">
+            <LoginPage setCurrentUser={setCurrentUser} />
+          </Route>
           <Route path="/register" component={RegisterPage} />
           <Route path="/rooms" component={RoomsPage} />
           <Route path="/chat/:roomId" component={ChatPage} />
