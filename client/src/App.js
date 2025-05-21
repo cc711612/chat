@@ -15,8 +15,24 @@ function App() {
   useEffect(() => {
     // 從 localStorage 獲取用戶信息
     const userString = localStorage.getItem('user');
-    if (userString) {
-      setCurrentUser(JSON.parse(userString));
+    try {
+      if (userString) {
+        const user = JSON.parse(userString);
+        // 檢查 user 是否為物件且有 id
+        if (user && typeof user === 'object' && user.id) {
+          setCurrentUser(user);
+        } else {
+          // 若 user 無效則清除 localStorage
+          localStorage.removeItem('user');
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    } catch (e) {
+      // JSON 解析錯誤時清除 localStorage
+      localStorage.removeItem('user');
+      setCurrentUser(null);
     }
   }, []);
 
