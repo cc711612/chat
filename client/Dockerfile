@@ -1,16 +1,16 @@
 # Client Dockerfile (React)
-FROM node:18-alpine
-
+# --- build stage ---
+FROM node:18-alpine AS builder
 WORKDIR /app
-
 COPY package*.json ./
+COPY .env ./
 RUN npm install --legacy-peer-deps
 COPY . .
+RUN npm run build
 
-# 預設 PORT=5173，可用 docker env 覆蓋
-ARG PORT=5173
-ENV PORT=${PORT}
-
-EXPOSE ${PORT}
-
-CMD ["npm", "start"]
+# --- production stage ---
+FROM node:18-alpine as production
+WORKDIR /app
+COPY --from=builder /app /app
+EXPOSE 5173
+CMD ["npm", "run", "preview"]
