@@ -462,7 +462,7 @@ const ChatPage = () => {
                       }} 
                       onClick={toggleEmojiPicker}
                     >
-                      😊
+                      <span role="img" aria-label="微笑">😊</span>
                     </Button>
                     {showEmojis && (
                       <div 
