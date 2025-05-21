@@ -4,9 +4,13 @@ FROM node:18
 
 WORKDIR /app
 
+# 設定 npm registry，加速安裝
+RUN npm config set registry https://registry.npmjs.org/
+
 COPY package*.json ./
-RUN npm install --legacy-peer-deps && npm install crypto \
-    && npm rebuild bcrypt --build-from-source
+# 改用 bcryptjs（純 JS 版，安裝超快，不需 native build）
+RUN npm install --legacy-peer-deps bcryptjs crypto
+
 COPY . .
 
 # 編譯 TypeScript

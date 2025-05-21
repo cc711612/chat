@@ -41,7 +41,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // 用戶登出
     const userId = this.socketUserMap.get(client.id);
     if (userId) {
-      await this.handleUserLogout(userId, client);
+      await this.handleUserLogout({ userId }, client);
     }
   }
 
