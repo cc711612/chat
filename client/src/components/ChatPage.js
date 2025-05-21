@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Container, Row, Col, Card, Form, Button, Badge, ListGroup, Alert, Dropdown } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Badge, ListGroup, Alert } from 'react-bootstrap';
 import { useParams, useHistory } from 'react-router-dom';
 import { api } from '../services/api';
 import { socketService } from '../services/socket';
@@ -464,7 +464,7 @@ const ChatPage = () => {
                               hoverBackgroundColor: '#f0f0f0'
                             }}
                           >
-                            {emoji}
+                            <span role="img" aria-label="表情符號">{emoji}</span>
                           </div>
                         ))}
                       </div>
