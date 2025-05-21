@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Row, Col, Card, Form, Button, Badge, ListGroup, Alert } from 'react-bootstrap';
 import { useParams, useHistory } from 'react-router-dom';
 import { api } from '../services/api';
+import ReactStringReplace from 'react-string-replace';
 import { socketService } from '../services/socket';
 
 // 常用 emoji 列表
@@ -40,6 +41,14 @@ const emojiLabels = {
 
 function getEmojiLabel(emoji) {
   return emojiLabels[emoji] || '表情符號';
+}
+
+function renderMessageContent(content) {
+  return ReactStringReplace(content, /([\u231A-\uD83E\uDDFF])/gu, (match, i) => (
+    <span key={i} role="img" aria-label={getEmojiLabel(match)}>
+      {match}
+    </span>
+  ));
 }
 
 const ChatPage = () => {
@@ -411,7 +420,7 @@ const ChatPage = () => {
                         fontStyle: message.isSystem ? 'italic' : 'normal'
                       }}
                     >
-                      {message.content}
+                      {renderMessageContent(message.content)}
                     </div>
                     <div className="message-time text-muted" style={{ fontSize: '0.75rem' }}>
                       {formatTimestamp(message.sentAt)}
