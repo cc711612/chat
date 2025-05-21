@@ -46,6 +46,9 @@ export class UsersService {
   }
 
   async updateOnlineStatus(id: number, isOnline: boolean): Promise<User | null> {
+    if (!id) {
+      throw new Error('User id is required for updateOnlineStatus');
+    }
     await this.usersRepository.update(id, { isOnline });
     return this.findOne(id);
   }
