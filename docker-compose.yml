@@ -30,6 +30,8 @@ services:
     networks:
       - chatnet
     restart: unless-stopped
+    volumes:
+      - ./client/.env:/app/.env
 
 
 networks:
