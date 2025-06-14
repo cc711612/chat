@@ -64,4 +64,13 @@ export class UsersService {
     
     return null;
   }
+
+  async hashData(data: string): Promise<string> {
+    const salt = await bcrypt.genSalt();
+    return bcrypt.hash(data, salt);
+  }
+
+  async compareRefreshToken(refreshToken: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(refreshToken, hash);
+  }
 }

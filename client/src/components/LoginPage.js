@@ -47,12 +47,13 @@ const LoginPage = ({ setCurrentUser }) => {
     setError('');
 
     try {
-      // 調用後端 API 進行登入
-      const response = await api.users.login(formData);
-      const { user } = response.data;
+      // 調用後端 API 進行登入 (使用新的 JWT 認證 API)
+      const response = await api.auth.login(formData);
+      const { user, accessToken, refreshToken } = response.data;
       
-      // 存儲用戶資訊到 localStorage
+      // 存儲用戶資訊和 token 到 localStorage
       localStorage.setItem('user', JSON.stringify(user));
+      api.tokenService.setTokens(accessToken, refreshToken);
       
       // 連接 WebSocket 並發送登入訊息
       socketService.connect();

@@ -1,12 +1,15 @@
-global.crypto = require('crypto');
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get('server.port') ?? 3001;
+
+  // 全局應用轉換攝截器，自動排除敏感欄位
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // 從環境配置中獲取 CORS 設定
   const corsEnabled = configService.get('cors.enabled');

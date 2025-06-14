@@ -1,13 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards';
 import { RoomsService } from './rooms.service';
 import { Room } from './room.entity';
+import { User } from '../users/user.entity';
 
 @Controller('rooms')
+@UseGuards(JwtAuthGuard)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Get()
   async findAll(): Promise<Room[]> {
+    // 直接返回結果，轉換攝截器會自動處理敏感資訊
     return this.roomsService.findAll();
   }
 
@@ -17,6 +21,8 @@ export class RoomsController {
     if (!room) {
       throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
     }
+    
+    // 直接返回結果，轉換攝截器會自動處理敏感資訊
     return room;
   }
 

@@ -9,6 +9,7 @@ import { ChatGateway } from './chat/chat.gateway';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from '@nestjs/config';
 import { getDatabaseConfig } from './config/database.config';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { getDatabaseConfig } from './config/database.config';
     UsersModule,
     MessagesModule,
     RoomsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, ChatGateway],

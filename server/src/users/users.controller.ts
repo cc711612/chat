@@ -1,17 +1,19 @@
-import { Controller, Get, Post, Body, Param, Put, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   async findAll(): Promise<User[]> {
-    // Omit password from response
+    // 移除敏感資訊
     const users = await this.usersService.findAll();
     return users.map(user => {
-      const { password, ...result } = user;
+      const { password, refreshToken, ...result } = user;
       return result as User;
     });
   }
@@ -22,8 +24,8 @@ export class UsersController {
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
-    // Omit password from response
-    const { password, ...result } = user;
+    // 移除敏感資訊
+    const { password, refreshToken, ...result } = user;
     return result as User;
   }
 
@@ -40,8 +42,8 @@ export class UsersController {
       }
       
       const user = await this.usersService.create(userData);
-      // Omit password from response
-      const { password, ...result } = user;
+      // 移除敏感資訊
+      const { password, refreshToken, ...result } = user;
       return result as User;
     } catch (error) {
       if (error instanceof HttpException) throw error;
@@ -49,25 +51,7 @@ export class UsersController {
     }
   }
 
-  @Post('login')
-  async login(@Body() loginData: { username: string; password: string }): Promise<any> {
-    const user = await this.usersService.validateUser(
-      loginData.username,
-      loginData.password,
-    );
-    
-    if (!user) {
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
-    }
-    
-    // Update online status
-    await this.usersService.updateOnlineStatus(user.id, true);
-    
-    return {
-      user,
-      message: 'Login successful',
-    };
-  }
+  // 移除多餘的 login 方法，因為已經有 AuthController 處理登入
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() userData: Partial<User>): Promise<User> {
@@ -81,8 +65,8 @@ export class UsersController {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
     
-    // Omit password from response
-    const { password, ...result } = user;
+    // 移除敏感資訊
+    const { password, refreshToken, ...result } = user;
     return result as User;
   }
 }

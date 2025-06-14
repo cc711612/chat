@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany } from 'typeorm';
 import { Message } from '../messages/message.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -10,6 +11,7 @@ export class User {
   username: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column({ nullable: true })
@@ -17,6 +19,10 @@ export class User {
 
   @Column({ default: false })
   isOnline: boolean;
+
+  @Column({ nullable: true })
+  @Exclude()
+  refreshToken: string;
 
   @CreateDateColumn()
   createdAt: Date;
