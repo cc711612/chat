@@ -213,7 +213,9 @@ const ChatPage = () => {
         
         // 確保初始載入後立即滾動到底部
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+          }
         }, 100);
       } else {
         setHasMoreMessages(false);
@@ -686,7 +688,9 @@ const ChatPage = () => {
                   size="sm" 
                   className="d-flex align-items-center"
                   onClick={() => {
-                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    if (messagesEndRef.current) {
+                      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
                     setHasNewMessages(false);
                   }}
                 >
