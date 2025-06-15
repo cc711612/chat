@@ -84,20 +84,44 @@ const ChatPage = () => {
     };
   }, [showEmojis]);
 
+  // 判斷用戶是否已經滾動到底部或接近底部
+  const isNearBottom = useCallback(() => {
+    if (!chatBodyRef.current) return true;
+    
+    const { scrollTop, scrollHeight, clientHeight } = chatBodyRef.current;
+    // 如果距離底部小於 100px，則視為已經在底部
+    return scrollHeight - scrollTop - clientHeight < 100;
+  }, []);
+  
+  // 智能滾動到底部，只有當用戶已經在底部時才會自動滾動
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current && isNearBottom()) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isNearBottom]);
+
   // 將 addMessageSafely 函數定義移到這裡，在它被使用之前
   const addMessageSafely = useCallback((message) => {
     if (!message || !message.id) return false;
     
-    // 检查消息是否已存在
-    if (messageIdsRef.current.has(message.id)) {
-      return false; // 消息已存在，不添加
+    // 添加新訊息到列表
+    // 確保不重複添加相同的訊息
+    if (!messageIdsRef.current.has(message.id)) {
+      setMessages(prevMessages => [...prevMessages, message]);
+      messageIdsRef.current.add(message.id);
+      
+      // 如果是在底部或是自己發送的訊息，更新最後讀取的訊息 ID
+      if (isNearBottom() || message.user?.id === currentUser?.id) {
+        setLastReadMessageId(message.id);
+      } 
+      // 如果不在底部，且不是自己發送的訊息，顯示新訊息提示
+      else if (message.user?.id !== currentUser?.id) {
+        setHasNewMessages(true);
+      }
+      return true;
     }
-    
-    // 添加消息并更新追踪集合
-    setMessages(prevMessages => [...prevMessages, message]);
-    messageIdsRef.current.add(message.id);
-    return true;
-  }, []);
+    return false;
+  }, [currentUser?.id, isNearBottom]);
 
   const setupSocketListeners = useCallback(() => {
     socketService.onNewMessage((message) => {
@@ -138,6 +162,15 @@ const ChatPage = () => {
     });
   }, [currentUser, addMessageSafely]);
 
+  // 添加狀態來追蹤是否還有更多訊息可以載入
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const [oldestMessageDate, setOldestMessageDate] = useState(null);
+  // 新增未讀訊息提示狀態
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  // 記錄上次讀取的最新訊息 ID
+  const [lastReadMessageId, setLastReadMessageId] = useState(null);
+  
   const fetchRoomDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -146,13 +179,45 @@ const ChatPage = () => {
       const response = await api.rooms.getRoom(roomId);
       setRoom(response.data);
       
-      // 獲取聊天室的訊息
-      const messagesResponse = await api.messages.getRoomMessages(roomId);
+      // 獲取聊天室的訊息，排除系統訊息
+      const messagesResponse = await api.messages.getRoomMessages(roomId, {
+        limit: 50,
+        excludeSystem: true
+      });
       const fetchedMessages = messagesResponse.data;
       
       // 更新消息并记录ID
       setMessages(fetchedMessages);
       messageIdsRef.current = new Set(fetchedMessages.map(msg => msg.id));
+      
+      // 設置最老訊息的日期和 ID，用於分頁載入
+      if (fetchedMessages.length > 0) {
+        // 記錄最老訊息的日期和 ID
+        const oldestMessage = fetchedMessages.reduce((oldest, current) => 
+          new Date(current.sentAt) < new Date(oldest.sentAt) ? current : oldest
+        );
+        console.log('初始載入後的最老訊息:', oldestMessage);
+        setOldestMessageDate(oldestMessage.sentAt);
+        setOldestMessageId(oldestMessage.id);
+        
+        // 記錄最新訊息的 ID，用於標記已讀訊息
+        const newestMessage = fetchedMessages.reduce((newest, current) => 
+          new Date(current.sentAt) > new Date(newest.sentAt) ? current : newest
+        );
+        setLastReadMessageId(newestMessage.id);
+        
+        // 如果返回的訊息數量等於請求的數量，則可能還有更多訊息
+        const hasMore = fetchedMessages.length >= 50;
+        console.log('是否有更多訊息:', hasMore, '訊息數量:', fetchedMessages.length);
+        setHasMoreMessages(hasMore);
+        
+        // 確保初始載入後立即滾動到底部
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }, 100);
+      } else {
+        setHasMoreMessages(false);
+      }
       
       setRoomUsers(response.data.users || []);
     } catch (error) {
@@ -162,6 +227,115 @@ const ChatPage = () => {
       setLoading(false);
     }
   }, [roomId]);
+  
+  // 記錄滾動位置的參考元素
+  const scrollPositionMarkerRef = useRef(null);
+  const chatBodyRef = useRef(null);
+  
+  // 儲存最老訊息的 ID
+  const [oldestMessageId, setOldestMessageId] = useState(null);
+  
+  // 載入更多歷史訊息
+  const loadMoreMessages = useCallback(async () => {
+    if (!hasMoreMessages || loadingMoreMessages) return;
+    
+    console.log('開始載入更多訊息');
+    console.log('當前最老訊息 ID:', oldestMessageId);
+    
+    try {
+      setLoadingMoreMessages(true);
+      
+      // 在載入前記錄當前第一條訊息的位置和滾動高度
+      const chatBody = chatBodyRef.current;
+      const scrollHeight = chatBody ? chatBody.scrollHeight : 0;
+      const firstMessageElement = document.querySelector('.message');
+      if (firstMessageElement) {
+        scrollPositionMarkerRef.current = firstMessageElement;
+      }
+      
+      // 使用 ID 進行分頁
+      const params = {
+        limit: 50,
+        excludeSystem: true
+      };
+      
+      // 如果有最老訊息 ID，則使用 ID 進行分頁
+      if (oldestMessageId) {
+        params.beforeId = oldestMessageId;
+      } 
+      // 否則使用日期進行分頁（只有在第一次載入更多訊息時才會使用）
+      else if (oldestMessageDate) {
+        params.before = oldestMessageDate;
+      }
+      
+      console.log('請求參數:', params);
+      
+      const messagesResponse = await api.messages.getRoomMessages(roomId, params);
+      
+      const olderMessages = messagesResponse.data;
+      console.log('載入到的訊息數量:', olderMessages.length);
+      
+      if (olderMessages.length > 0) {
+        // 尋找最老的訊息
+        const oldestMessage = olderMessages.reduce((oldest, current) => 
+          new Date(current.sentAt) < new Date(oldest.sentAt) ? current : oldest
+        );
+        console.log('新的最老訊息:', oldestMessage);
+        
+        // 更新最老訊息的 ID 和日期
+        setOldestMessageId(oldestMessage.id);
+        setOldestMessageDate(oldestMessage.sentAt);
+        
+        // 添加新訊息到現有訊息列表的前面
+        setMessages(prevMessages => {
+          // 記錄更新前的訊息狀態
+          console.log('更新前的訊息列表:', prevMessages.length, '條訊息');
+          console.log('更新前的訊息 ID 集合大小:', messageIdsRef.current.size);
+          
+          // 過濾掉已經存在的訊息
+          const existingIds = new Set(prevMessages.map(msg => msg.id));
+          const newMessages = olderMessages.filter(msg => !existingIds.has(msg.id));
+          console.log('新增的不重複訊息數量:', newMessages.length);
+          console.log('新訊息 ID:', newMessages.map(msg => msg.id));
+          
+          // 更新已顯示訊息的 ID 集合
+          newMessages.forEach(msg => messageIdsRef.current.add(msg.id));
+          
+          // 將新訊息添加到現有訊息的前面
+          const updatedMessages = [...newMessages, ...prevMessages];
+          console.log('更新後的訊息列表:', updatedMessages.length, '條訊息');
+          
+          return updatedMessages;
+        });
+        
+        // 如果返回的訊息數量等於請求的數量，則可能還有更多訊息
+        const hasMore = olderMessages.length >= 50;
+        console.log('是否還有更多訊息:', hasMore);
+        setHasMoreMessages(hasMore);
+        
+        // 使用 setTimeout 確保在 DOM 更新後恢復滾動位置
+        setTimeout(() => {
+          if (chatBodyRef.current) {
+            // 計算新增內容的高度差異，並調整滾動位置
+            const newScrollHeight = chatBodyRef.current.scrollHeight;
+            const heightDifference = newScrollHeight - scrollHeight;
+            chatBodyRef.current.scrollTop = heightDifference;
+            console.log('滾動位置調整完成，高度差異:', heightDifference);
+          } else {
+            console.log('無法調整滾動位置，聊天容器不存在');
+          }
+        }, 100);
+      } else {
+        console.log('沒有更多訊息了');
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      console.error('載入更多訊息失敗:', error);
+      setError('無法載入更多訊息，請稍後再試。');
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  }, [hasMoreMessages, loadingMoreMessages, roomId, oldestMessageId, oldestMessageDate, setOldestMessageId, setOldestMessageDate, setMessages, messageIdsRef, setHasMoreMessages, setError]);
 
   const joinRoom = useCallback(async (userId, roomId) => {
     try {
@@ -250,19 +424,40 @@ const ChatPage = () => {
   // 當訊息列表更新時，滾動到底部
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
+  
+  // 添加滾動事件監聽，處理滾動到底部清除新訊息提示和滾動到頂部載入更多訊息
+  useEffect(() => {
+    const handleScroll = () => {
+      // 當滾動到底部時，清除新訊息提示
+      if (isNearBottom() && hasNewMessages) {
+        setHasNewMessages(false);
+      }
+      
+      // 當滾動到頂部或接近頂部時，自動載入更多訊息
+      const { scrollTop } = chatBodyRef.current;
+      if (scrollTop < 50 && hasMoreMessages && !loadingMoreMessages) {
+        loadMoreMessages();
+      }
+    };
+    
+    const chatBodyElement = chatBodyRef.current;
+    if (chatBodyElement) {
+      chatBodyElement.addEventListener('scroll', handleScroll);
+    }
+    
+    return () => {
+      if (chatBodyElement) {
+        chatBodyElement.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [hasNewMessages, isNearBottom, hasMoreMessages, loadingMoreMessages, loadMoreMessages]);
 
   const leaveRoom = async (userId, roomId) => {
     try {
       await socketService.leaveRoom(userId, roomId);
     } catch (error) {
       console.error('離開聊天室失敗:', error);
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -386,46 +581,85 @@ const ChatPage = () => {
                 返回聊天室列表
               </Button>
             </Card.Header>
-            <Card.Body className="chat-messages" style={{ height: '70vh', overflowY: 'auto' }}>
+            <Card.Body 
+              ref={chatBodyRef}
+              className="chat-messages" 
+              style={{ height: '70vh', overflowY: 'auto' }}
+            >
+              {/* 加載更多訊息按鈕 */}
+              {hasMoreMessages && (
+                <div className="text-center my-2">
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    onClick={loadMoreMessages}
+                    disabled={loadingMoreMessages}
+                  >
+                    {loadingMoreMessages ? '載入中...' : '加載更多訊息'}
+                  </Button>
+                </div>
+              )}
+              
               {messages.length === 0 ? (
                 <div className="text-center text-muted my-5">
                   <p>還沒有訊息，發送第一條訊息來開始聊天吧！</p>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div 
-                    key={message.id} 
-                    className={`message ${message.isSystem ? 'text-center' : message.user?.id === currentUser?.id ? 'text-end' : ''}`}
-                    style={{ marginBottom: '15px' }}
-                  >
-                    {!message.isSystem && message.user?.id !== currentUser?.id && (
-                      <div className="message-sender">
-                        <strong>{message.user?.displayName || message.user?.username}</strong>
+                messages.map((message, index, allMessages) => (
+                  <React.Fragment key={message.id}>
+                    {/* 如果前一條訊息是已讀的，而當前訊息是未讀的，顯示分隔線 */}
+                    {index > 0 && 
+                     lastReadMessageId === allMessages[index-1].id && 
+                     message.id !== lastReadMessageId && (
+                      <div className="unread-divider text-center my-3">
+                        <div style={{ 
+                          height: '1px', 
+                          backgroundColor: '#dc3545', 
+                          position: 'relative',
+                          marginBottom: '8px'
+                        }}></div>
+                        <small className="text-danger bg-white px-2" style={{ 
+                          position: 'relative', 
+                          top: '-18px',
+                          padding: '0 10px'
+                        }}>
+                          新訊息
+                        </small>
                       </div>
                     )}
                     <div 
-                      className={`message-content ${
-                        message.isSystem 
-                          ? 'bg-light text-muted font-italic' 
-                          : message.user?.id === currentUser?.id 
-                            ? 'bg-primary text-white' 
-                            : 'bg-light'
-                      } ${message.temporary ? 'opacity-75' : ''}`}
-                      style={{ 
-                        display: 'inline-block', 
-                        padding: '8px 12px', 
-                        borderRadius: '12px',
-                        maxWidth: message.isSystem ? '50%' : '80%',
-                        wordBreak: 'break-word',
-                        fontStyle: message.isSystem ? 'italic' : 'normal'
-                      }}
+                      className={`message ${message.isSystem ? 'text-center' : message.user?.id === currentUser?.id ? 'text-end' : ''}`}
+                      style={{ marginBottom: '15px' }}
                     >
-                      {renderMessageContent(message.content)}
+                      {!message.isSystem && message.user?.id !== currentUser?.id && (
+                        <div className="message-sender">
+                          <strong>{message.user?.displayName || message.user?.username}</strong>
+                        </div>
+                      )}
+                      <div 
+                        className={`message-content ${
+                          message.isSystem 
+                            ? 'bg-light text-muted font-italic' 
+                            : message.user?.id === currentUser?.id 
+                              ? 'bg-primary text-white' 
+                              : 'bg-light'
+                        } ${message.temporary ? 'opacity-75' : ''}`}
+                        style={{ 
+                          display: 'inline-block', 
+                          padding: '8px 12px', 
+                          borderRadius: '12px',
+                          maxWidth: message.isSystem ? '50%' : '80%',
+                          wordBreak: 'break-word',
+                          fontStyle: message.isSystem ? 'italic' : 'normal'
+                        }}
+                      >
+                        {renderMessageContent(message.content)}
+                      </div>
+                      <div className="message-time text-muted" style={{ fontSize: '0.75rem' }}>
+                        {formatTimestamp(message.sentAt)}
+                      </div>
                     </div>
-                    <div className="message-time text-muted" style={{ fontSize: '0.75rem' }}>
-                      {formatTimestamp(message.sentAt)}
-                    </div>
-                  </div>
+                  </React.Fragment>
                 ))
               )}
               {Object.keys(typingUsers).length > 0 && (
@@ -435,6 +669,32 @@ const ChatPage = () => {
               )}
               <div ref={messagesEndRef} />
             </Card.Body>
+            
+            {/* 新訊息提示按鈕 */}
+            {hasNewMessages && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  bottom: '80px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 1000
+                }}
+              >
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  className="d-flex align-items-center"
+                  onClick={() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    setHasNewMessages(false);
+                  }}
+                >
+                  <span className="me-2">⚡</span>
+                  新訊息
+                </Button>
+              </div>
+            )}
             <Card.Footer>
               <Form onSubmit={handleSendMessage}>
                 <div className="d-flex">

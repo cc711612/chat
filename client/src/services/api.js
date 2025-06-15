@@ -206,9 +206,26 @@ export const api = {
     getMessage: (id) => {
       return axiosInstance.get(`${API_URL}/messages/${id}`);
     },
-    // 獲取聊天室的所有訊息
-    getRoomMessages: (roomId) => {
-      return axiosInstance.get(`${API_URL}/messages/room/${roomId}`);
+    // 獲取聊天室的訊息，支援分頁和過濾系統訊息
+    getRoomMessages(roomId, options = {}) {
+      const { limit = 50, before, beforeId, excludeSystem = true } = options;
+      let url = `/messages/room/${roomId}?limit=${limit}&excludeSystem=${excludeSystem}`;
+      
+      // 優先使用 ID 進行分頁，因為這比日期更精確
+      if (beforeId) {
+        console.log('發送 ID 參數:', beforeId);
+        url += `&beforeId=${beforeId}`;
+      }
+      // 如果沒有 ID 但有日期，則使用日期進行分頁
+      else if (before) {
+        // 確保日期參數正確编碼
+        const beforeDate = new Date(before);
+        console.log('發送日期參數:', beforeDate.toISOString());
+        url += `&before=${encodeURIComponent(beforeDate.toISOString())}`;
+      }
+      
+      console.log('請求 URL:', url);
+      return axiosInstance.get(url);
     },
     // 發送訊息
     create: (messageData) => {

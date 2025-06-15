@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards';
 import { MessagesService } from './messages.service';
 import { Message } from './message.entity';
@@ -23,11 +23,30 @@ export class MessagesController {
   }
 
   @Get('room/:roomId')
-  async findByRoomId(@Param('roomId') roomId: string): Promise<Message[]> {
+  async findByRoomId(
+    @Param('roomId') roomId: string,
+    @Query('limit') limit?: number,
+    @Query('before') before?: string,
+    @Query('beforeId') beforeId?: string,
+    @Query('excludeSystem') excludeSystem?: string,
+  ): Promise<Message[]> {
     try {
-      return await this.messagesService.findByRoomId(+roomId);
+      console.log('查詢參數:', { roomId, limit, before, beforeId, excludeSystem });
+      
+      // 轉換參數
+      const options = {
+        limit: limit ? +limit : 50,
+        before: before ? new Date(before) : undefined,
+        beforeId: beforeId ? +beforeId : undefined,
+        excludeSystem: excludeSystem === 'true',
+      };
+      
+      console.log('轉換後的參數:', options);
+      
+      return await this.messagesService.findByRoomId(+roomId, options);
     } catch (error) {
-      throw new HttpException('Failed to get room messages', HttpStatus.INTERNAL_SERVER_ERROR);
+      console.error('獲取聊天室訊息失敗:', error);
+      throw new HttpException(`Failed to get room messages: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
