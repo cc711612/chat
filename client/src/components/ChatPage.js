@@ -121,7 +121,7 @@ const ChatPage = () => {
       return true;
     }
     return false;
-  }, [currentUser && currentUser.id, isNearBottom]);
+  }, [currentUser?.id, isNearBottom]);
 
   const setupSocketListeners = useCallback(() => {
     socketService.onNewMessage((message) => {
