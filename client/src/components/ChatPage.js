@@ -121,7 +121,7 @@ const ChatPage = () => {
       return true;
     }
     return false;
-  }, [currentUser?.id, isNearBottom]);
+  }, [currentUser && currentUser.id, isNearBottom]);
 
   const setupSocketListeners = useCallback(() => {
     socketService.onNewMessage((message) => {
@@ -694,7 +694,7 @@ const ChatPage = () => {
                     setHasNewMessages(false);
                   }}
                 >
-                  <span className="me-2">⚡</span>
+                  <span className="me-2" role="img" aria-label="閃電">⚡</span>
                   新訊息
                 </Button>
               </div>
