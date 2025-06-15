@@ -1,6 +1,6 @@
 # Server Dockerfile (NestJS)
-FROM node:18
-# 改用完整版 node:18，alpine 可能缺少 openssl 導致 crypto module 不可用
+FROM node:21
+# 改用完整版 node:21，alpine 可能缺少 openssl 導致 crypto module 不可用
 
 WORKDIR /app
 
