@@ -101,6 +101,9 @@ const ChatPage = () => {
   }, [isNearBottom]);
 
   // 將 addMessageSafely 函數定義移到這裡，在它被使用之前
+  // 提取 currentUser?.id 為單獨的變數，以便在依賴陣列中使用
+  const currentUserId = currentUser?.id;
+
   const addMessageSafely = useCallback((message) => {
     if (!message || !message.id) return false;
     
@@ -111,17 +114,17 @@ const ChatPage = () => {
       messageIdsRef.current.add(message.id);
       
       // 如果是在底部或是自己發送的訊息，更新最後讀取的訊息 ID
-      if (isNearBottom() || message.user?.id === currentUser?.id) {
+      if (isNearBottom() || message.user?.id === currentUserId) {
         setLastReadMessageId(message.id);
       } 
       // 如果不在底部，且不是自己發送的訊息，顯示新訊息提示
-      else if (message.user?.id !== currentUser?.id) {
+      else if (message.user?.id !== currentUserId) {
         setHasNewMessages(true);
       }
       return true;
     }
     return false;
-  }, [currentUser?.id, isNearBottom]);
+  }, [currentUserId, isNearBottom]);
 
   const setupSocketListeners = useCallback(() => {
     socketService.onNewMessage((message) => {
